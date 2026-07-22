@@ -61,6 +61,7 @@ from .hurricane import HurricaneDnsProvider
 from .mythicbeasts import MythicBeastsDnsProvider
 from .rcodezero import RcodeZeroDnsProvider
 from .rfc2136 import Rfc2136DnsProvider
+from .active24 import Active24DnsProvider
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +83,7 @@ PROVIDER_REGISTRY: Dict[str, Type[BaseDnsProvider]] = {
     'netcup': NetcupDnsProvider,
     'inwx': InwxDnsProvider,
     'bookmyname': BookMyNameDnsProvider,
+    'active24': Active24DnsProvider,
     # International providers
     'cloudflare': CloudflareDnsProvider,
     'digitalocean': DigitalOceanDnsProvider,
