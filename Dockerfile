@@ -32,9 +32,15 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
 # Stage 2: Runtime - Minimal production image
 FROM python:3.13-slim-bookworm
 
+ARG VCS_REF=unknown
+ARG VERSION=dev
+ARG BUILD_DATE=unknown
 LABEL maintainer="NeySlim <https://github.com/NeySlim>" \
       description="Ultimate CA Manager - Certificate Authority Management System" \
-      org.opencontainers.image.source="https://github.com/NeySlim/ultimate-ca-manager"
+      org.opencontainers.image.source="https://github.com/norman67cz/ultimate-ca-manager" \
+      org.opencontainers.image.revision="${VCS_REF}" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.created="${BUILD_DATE}"
 
 # Install only runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
