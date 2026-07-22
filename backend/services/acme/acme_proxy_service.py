@@ -823,7 +823,9 @@ class AcmeProxyService:
                 full_record_name = provider.get_acme_challenge_name(domain)
                 
                 logger.info(f"[ACME Proxy BG] Creating DNS TXT record for {domain} in zone {zone}: {full_record_name}")
-                provider.create_txt_record(zone, full_record_name, txt_value)
+                success, message = provider.create_txt_record(zone, full_record_name, txt_value)
+                if not success:
+                    raise RuntimeError(f"DNS TXT record creation failed: {message}")
 
                 # Active DNS self-check instead of fixed sleep.
                 timeout = dns_propagation_timeout('acme.client.dns_propagation_timeout')
@@ -884,10 +886,10 @@ class AcmeProxyService:
                 db.session.remove()
 
     @staticmethod
-    def _delete_dns_record(provider, zone: str, record_name: str) -> None:
+    def _delete_dns_record(provider, zone: str, record_name: str, record_value: str | None = None) -> None:
         """Best-effort TXT cleanup helper."""
         try:
-            provider.delete_txt_record(zone, record_name)
+            provider.delete_txt_record_exact(zone, record_name, record_value)
         except Exception as e:
             logger.warning("Failed to cleanup DNS record %s (%s): %s", record_name, zone, e)
 
@@ -906,7 +908,7 @@ class AcmeProxyService:
                         credentials = json.loads(provider_model.credentials) if provider_model.credentials else {}
                         provider = create_provider(provider_model.provider_type, credentials)
                         logger.info(f"[ACME Proxy] Cleaning up DNS record: {record['record_name']} in zone {record['domain']}")
-                        self._delete_dns_record(provider, record['domain'], record['record_name'])
+                        self._delete_dns_record(provider, record['domain'], record['record_name'], record.get('value'))
                     except Exception as e:
                         logger.warning(f"Failed to cleanup DNS record {record.get('record_name')}: {e}")
             finally:
