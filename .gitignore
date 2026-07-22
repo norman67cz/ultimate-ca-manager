@@ -110,3 +110,7 @@ SECURITY_AUDIT.md
 # Local lab secrets (OpenSSL / create_app)
 .env.lab
 .env*.local
+
+deployment/docker/.env
+deployment/docker/backups/*
+!deployment/docker/backups/.gitkeep
