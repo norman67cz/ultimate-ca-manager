@@ -1683,10 +1683,13 @@ class AcmeClientService:
             
             challenges = order.challenges_dict
             for domain, challenge in challenges.items():
-                provider.delete_txt_record(
+                success, message = provider.delete_txt_record_exact(
                     domain=strip_wildcard(domain),
-                    record_name=challenge['dns_txt_name']
+                    record_name=challenge['dns_txt_name'],
+                    record_value=challenge.get('dns_txt_value')
                 )
+                if not success:
+                    return False, message
             
             return True, "DNS records cleaned up"
             
