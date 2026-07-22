@@ -100,6 +100,10 @@ class BaseDnsProvider(ABC):
             Tuple of (success: bool, message: str)
         """
         pass
+
+    def delete_txt_record_exact(self, domain: str, record_name: str, record_value: Optional[str] = None) -> Tuple[bool, str]:
+        """Delete one challenge value when supported; legacy providers retain their behavior."""
+        return self.delete_txt_record(domain, record_name)
     
     @abstractmethod
     def test_connection(self) -> Tuple[bool, str]:
