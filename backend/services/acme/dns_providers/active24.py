@@ -51,13 +51,15 @@ class Active24DnsProvider(BaseDnsProvider):
         canonical = self._canonical_string(method, path, timestamp)
         sig = hmac.new(self.credentials["api_secret"].encode(), canonical.encode(), hashlib.sha1).hexdigest()
         auth = base64.b64encode(f"{self.credentials['api_key']}:{sig}".encode()).decode()
-        return {"Date": datetime.fromtimestamp(timestamp, timezone.utc).strftime("%Y%m%dT%H%M%SZ"),
+        return {"Date": datetime.fromtimestamp(timestamp, timezone.utc).isoformat(),
                 "Accept": "application/json", "Content-Type": "application/json", "Authorization": f"Basic {auth}"}
 
-    def _request(self, method, path, payload=None):
+    def _request(self, method, path, payload=None, params=None):
         try:
-            response = self.session.request(method, f"{self.base_url}{path}", headers=self._headers(method, path),
-                                            json=payload, timeout=self.TIMEOUT)
+            headers = {**self._headers(method, path),
+                       "User-Agent": "Ultimate-Certificate-Manager/2.205 Active24DNSProvider"}
+            response = self.session.request(method, f"{self.base_url}{path}", headers=headers,
+                                            json=payload, params=params, timeout=self.TIMEOUT)
         except requests.Timeout:
             return False, None, "ACTIVE24 API timeout"
         except requests.RequestException as exc:
@@ -87,33 +89,37 @@ class Active24DnsProvider(BaseDnsProvider):
             for value in data:
                 yield from Active24DnsProvider._items(value)
 
+    def _services(self):
+        """Return Active24 domain services without exposing raw API errors."""
+        ok, payload, message = self._request("GET", "/v1/user/self/service")
+        if not ok:
+            return None, message
+        if not isinstance(payload, dict) or not isinstance(payload.get("items"), list):
+            return None, "Invalid response from ACTIVE24 API"
+        services = [
+            item for item in payload["items"]
+            if isinstance(item, dict) and item.get("serviceName") == "domain"
+            and isinstance(item.get("name"), str) and item.get("id") is not None
+        ]
+        return services, ""
+
     def _resolve(self, domain):
         name = self._domain(domain)
         if name in self._zones:
             return self._zones[name]
-        ok, services, _ = self._request("GET", "/v1/user/self/service")
-        if not ok:
+        services, _ = self._services()
+        if services is None:
             return None
-        zones = []
-        for item in self._items(services):
-            zone = item.get("zone") or item.get("domain") or item.get("name")
-            if isinstance(zone, str) and "." in zone:
-                zone = self._domain(zone)
-                if name == zone or name.endswith("." + zone):
-                    zones.append(zone)
-        if not zones:
+        matches = []
+        for service in services:
+            zone = self._domain(service["name"])
+            if name == zone or name.endswith("." + zone):
+                matches.append((zone, str(service["id"])))
+        if not matches:
             return None
-        zone = max(zones, key=len)
-        ok, detail, _ = self._request("GET", f"/v1/user/self/zone/{zone}")
-        if not ok:
-            return None
-        service_id = next((item.get("service_id") or item.get("serviceId") or item.get("id")
-                           for item in self._items(detail)
-                           if item.get("service_id") or item.get("serviceId") or item.get("id")), None)
-        if service_id is None:
-            return None
-        self._zones[name] = (zone, str(service_id))
-        return self._zones[name]
+        result = max(matches, key=lambda item: len(item[0]))
+        self._zones[name] = result
+        return result
 
     def get_zone_for_domain(self, domain):
         result = self._resolve(domain)
@@ -175,19 +181,16 @@ class Active24DnsProvider(BaseDnsProvider):
         return True, "TXT record deleted" if matches else "TXT record is already absent"
 
     def test_connection(self):
-        ok, data, message = self._request("GET", "/v2/check")
-        if not ok:
+        services, message = self._services()
+        if services is None:
             return False, message
-        if not isinstance(data, dict) or data.get("verified") is not True:
-            return False, "Invalid response from ACTIVE24 API"
-        ok, services, _ = self._request("GET", "/v1/user/self/service")
-        if not ok or not any(True for _ in self._items(services)):
+        if not services:
             return False, "ACTIVE24 account has no available DNS zones"
-        return True, "Connected to ACTIVE24"
+        return True, "Connected successfully to Active24 API"
 
     @classmethod
     def get_credential_schema(cls):
-        return [{"name": "api_key", "label": "Identifier", "type": "text", "required": True},
-                {"name": "api_secret", "label": "Secret key", "type": "password", "required": True},
+        return [{"name": "api_key", "label": "API Key", "type": "text", "required": True},
+                {"name": "api_secret", "label": "API Secret", "type": "password", "required": True},
                 {"name": "api_base_url", "label": "API base URL (advanced)", "type": "text", "required": False,
                  "default": cls.DEFAULT_BASE_URL}]
