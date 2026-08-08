@@ -7,7 +7,6 @@ to a credential it transitions to ``used``.
 """
 import base64
 import json
-import re
 import ipaddress
 
 from flask import request, g
@@ -16,15 +15,10 @@ from services.audit_service import AuditService
 from auth.unified import require_auth
 from utils.response import success_response, error_response, no_content_response
 from utils.db_transaction import safe_commit
+from utils.acme_allowed_domains import normalize_allowed_domain_suffix
 
 from . import bp, logger
 
-
-_HOSTNAME_RE = re.compile(
-    r'^(?=.{1,253}$)'
-    r'([a-z0-9_]([a-z0-9_-]{0,61}[a-z0-9_])?\.)*'
-    r'[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$'
-)
 
 
 def _parse_allowed_domains(raw):
@@ -44,7 +38,7 @@ def _parse_allowed_domains(raw):
     for entry in raw:
         if not isinstance(entry, str):
             return None, 'allowed_domains entries must be strings'
-        pattern = entry.strip().rstrip('.').lower()
+        pattern = entry.strip().lower()
         if not pattern:
             continue
         if pattern != '*':
@@ -58,8 +52,13 @@ def _parse_allowed_domains(raw):
                 pass
             if is_ip and is_wildcard:
                 return None, f'Wildcard IP patterns are not supported: {entry}'
-            if not is_ip and (len(pattern) > 255 or not _HOSTNAME_RE.match(host)):
-                return None, f'Invalid domain pattern: {entry}'
+            if not is_ip:
+                suffix = normalize_allowed_domain_suffix(host)
+                if suffix is None:
+                    return None, f'Invalid domain pattern: {entry}'
+                if is_wildcard and '.' not in suffix:
+                    return None, f'Invalid domain pattern: {entry}'
+                pattern = f'*.{suffix}' if is_wildcard else suffix
         if pattern not in seen:
             seen.add(pattern)
             cleaned.append(pattern)

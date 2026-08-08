@@ -1523,7 +1523,7 @@
       "deletedSuccess": "EAB credential deleted",
       "deleteFailed": "Failed to delete EAB credential",
       "allowedDomains": "Allowed domains",
-      "allowedDomainsHelp": "One pattern per line or comma-separated (e.g. *.mydomain.com, host.mydomain.com). Leave empty to block all issuance for this credential.",
+      "allowedDomainsHelp": "One policy suffix or pattern per line or comma-separated (e.g. homeland, *.mydomain.com). A suffix permits qualified names below it; leave empty to block all issuance for this credential.",
       "allDomainsLabel": "All domains (adds * to the allowed list)",
       "allDomains": "All domains",
       "noDomains": "None (issuance blocked)",

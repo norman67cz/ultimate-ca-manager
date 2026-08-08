@@ -1,6 +1,8 @@
 """Per-EAB domain restriction tests."""
 import json
 import pytest
+from api.v2.acme.eab import _parse_allowed_domains
+
 
 
 def _cred(allowed):
@@ -24,6 +26,14 @@ def _cred(allowed):
     (['*.mydomain.com'], {'type': 'dns', 'value': 'mydomain.com'}, False),
     (['*.mydomain.com'], {'type': 'dns', 'value': 'evilmydomain.com'}, False),
     (['*.mydomain.com'], {'type': 'dns', 'value': '*.mydomain.com'}, True),
+    (['homeland'], {'type': 'dns', 'value': 'pve01.homeland'}, True),
+    (['homeland'], {'type': 'dns', 'value': 'foo.bar.homeland'}, True),
+    (['homeland'], {'type': 'dns', 'value': '*.homeland'}, True),
+    (['homeland'], {'type': 'dns', 'value': 'homeland'}, False),
+    (['homeland'], {'type': 'dns', 'value': 'evilhomeland'}, False),
+    (['homeland'], {'type': 'dns', 'value': 'foo.evilhomeland'}, False),
+    (['lan.homeland'], {'type': 'dns', 'value': 'pve01.lan.homeland'}, True),
+    (['lan.homeland'], {'type': 'dns', 'value': 'pve01.homeland'}, False),
     (['*.mydomain.com'], {'type': 'dns', 'value': '*.b.mydomain.com'}, True),
     (['host.mydomain.com'], {'type': 'dns', 'value': '*.mydomain.com'}, False),
     (['*'], {'type': 'ip', 'value': '10.0.0.1'}, True),
@@ -39,12 +49,12 @@ def test_create_and_patch_allowed_domains(auth_client):
     r = auth_client.post(
         '/api/v2/acme/eab-credentials',
         data=json.dumps({'label': 'restricted',
-                         'allowed_domains': ['*.Mydomain.COM.', 'host.mydomain.com']}),
+                         'allowed_domains': ['*.Mydomain.COM', 'host.mydomain.com', 'homeland']}),
         content_type='application/json',
     )
     assert r.status_code == 201
     cred = json.loads(r.data)['data']
-    assert cred['allowed_domains'] == ['*.mydomain.com', 'host.mydomain.com']
+    assert cred['allowed_domains'] == ['*.mydomain.com', 'host.mydomain.com', 'homeland']
 
     r = auth_client.patch(
         f"/api/v2/acme/eab-credentials/{cred['id']}",

@@ -3,10 +3,12 @@ ACME Protocol Models (RFC 8555)
 Automatic Certificate Management Environment
 """
 from datetime import datetime, timedelta
+import ipaddress
 from . import db
 import secrets
 import json
 from utils.datetime_utils import utc_now, utc_isoformat
+from utils.acme_allowed_domains import is_single_label_suffix
 
 
 class AcmeAccount(db.Model):
@@ -688,7 +690,20 @@ class AcmeEabCredential(db.Model):
                 base = value[2:]
                 return base == suffix or base.endswith('.' + suffix)
             return value != suffix and value.endswith('.' + suffix)
-        return value == pattern
+
+        try:
+            ipaddress.ip_address(pattern)
+            return value == pattern
+        except ValueError:
+            pass
+
+        is_wildcard_identifier = value.startswith('*.')
+        candidate = value[2:] if is_wildcard_identifier else value
+        if is_single_label_suffix(pattern):
+            if is_wildcard_identifier:
+                return candidate == pattern or candidate.endswith('.' + pattern)
+            return candidate != pattern and candidate.endswith('.' + pattern)
+        return candidate == pattern or candidate.endswith('.' + pattern)
 
     def allows_identifier(self, identifier):
         """Check an ACME identifier dict against the allowed patterns."""
