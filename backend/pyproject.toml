@@ -6,6 +6,7 @@ python_functions = ["test_*"]
 addopts = "-v --ignore=tests/e2e_test_suite.py"
 markers = [
     "postgres: marks tests requiring a real PostgreSQL instance (set UCM_TEST_POSTGRES_URL)",
+    "active24_live: explicit live Active24 DNS API test (requires ACTIVE24_* variables)",
 ]
 
 [tool.coverage.run]
