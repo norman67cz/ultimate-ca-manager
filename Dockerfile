@@ -78,7 +78,7 @@ COPY --chown=ucm:ucm .env.docker.example /opt/ucm/.env.example
 RUN mkdir -p /opt/ucm/data/{ca,certs,private,crl,scep,backups,sessions,logs,temp} && \
     mkdir -p /var/log/ucm && \
     mkdir -p /etc/ucm && \
-    chown -R ucm:ucm /opt/ucm /var/log/ucm /etc/ucm
+    chown -R ucm:ucm /opt/ucm/data /var/log/ucm /etc/ucm
 
 # Set environment variables
 ENV PATH="/opt/ucm/venv/bin:$PATH" \

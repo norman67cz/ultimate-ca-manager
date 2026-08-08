@@ -5,6 +5,10 @@
 .gitignore
 .gitattributes
 
+# JavaScript build dependencies and generated assets
+frontend/node_modules/
+frontend/dist/
+
 # Python
 __pycache__/
 *.py[cod]
