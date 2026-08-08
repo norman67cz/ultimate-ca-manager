@@ -424,7 +424,7 @@ export default function EabTab({ eabRequired, onToggleEabRequired, showCreateMod
               <textarea
                 className="w-full px-3 py-2 rounded bg-bg-tertiary border border-border font-mono text-sm"
                 rows={4}
-                placeholder={'*.mydomain.com\nhost.mydomain.com'}
+                placeholder={'homeland\n*.mydomain.com'}
                 value={eabAllowedDomainsText}
                 onChange={(e) => setEabAllowedDomainsText(e.target.value)}
               />
@@ -508,7 +508,7 @@ export default function EabTab({ eabRequired, onToggleEabRequired, showCreateMod
               <textarea
                 className="w-full px-3 py-2 rounded bg-bg-tertiary border border-border font-mono text-sm"
                 rows={4}
-                placeholder={'*.mydomain.com\nhost.mydomain.com'}
+                placeholder={'homeland\n*.mydomain.com'}
                 value={editingDomainsText}
                 onChange={(e) => setEditingDomainsText(e.target.value)}
               />

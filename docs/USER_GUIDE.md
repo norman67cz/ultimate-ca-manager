@@ -227,7 +227,12 @@ Enable Let's Encrypt-compatible certificate issuance:
 3. Configure:
    - **Base URL** - Public URL for challenges
    - **Default CA** - CA for issued certificates
-   - **Allowed Domains** - Restrict issuance
+   - **Allowed Domains** - Restrict issuance. Entries are policy suffixes;
+     a single-label internal suffix such as `homeland` permits qualified names
+     below it (`pve01.homeland`, `nas.homeland`, `host.lab.homeland`) but does
+     not grant a certificate for `homeland` itself. Matching is label-aware, so
+     `evilhomeland` is not covered. Existing `*.example.com` patterns remain
+     available for subdomain-only policies.
 4. Clients use: `https://your-server:8443/acme/directory`
 
 ### SCEP Server
