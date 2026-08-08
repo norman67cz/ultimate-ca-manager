@@ -2,7 +2,6 @@
 ACME Local Domains API Routes
 Manages domain-to-CA mappings for the Local ACME server.
 """
-import re
 import logging
 from flask import Blueprint, request, g
 from auth.unified import require_auth
@@ -10,6 +9,7 @@ from utils.response import success_response, error_response
 from utils.db_transaction import safe_commit
 from models import db, AcmeLocalDomain, CA
 from services.audit_service import AuditService
+from utils.acme_allowed_domains import normalize_allowed_domain_suffix
 
 logger = logging.getLogger(__name__)
 
@@ -160,8 +160,12 @@ def find_local_domain_ca(domain: str) -> int | None:
     Returns issuing_ca_id or None.
     """
     domain = domain.strip().lower()
-    if domain.startswith('*.'):
+    is_wildcard = domain.startswith('*.')
+    if is_wildcard:
         domain = domain[2:]
+    # A single label is a policy suffix, never an ordinary identifier.
+    if '.' not in domain and not is_wildcard:
+        return None
     
     # Exact match
     local = AcmeLocalDomain.query.filter_by(domain=domain).first()
@@ -180,6 +184,8 @@ def find_local_domain_ca(domain: str) -> int | None:
 
 
 def _is_valid_domain(domain: str) -> bool:
-    """Validate domain format"""
-    pattern = r'^(\*\.)?([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$'
-    return bool(re.match(pattern, domain))
+    """Validate a Local Domains policy suffix or legacy wildcard policy."""
+    is_wildcard = domain.startswith("*.")
+    suffix = domain[2:] if is_wildcard else domain
+    normalized = normalize_allowed_domain_suffix(suffix)
+    return normalized is not None and (not is_wildcard or "." in normalized)
