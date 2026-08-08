@@ -57,7 +57,7 @@ class Active24DnsProvider(BaseDnsProvider):
     def _request(self, method, path, payload=None, params=None):
         try:
             headers = {**self._headers(method, path),
-                       "User-Agent": "Ultimate-Certificate-Manager/2.205 Active24DNSProvider"}
+                       "User-Agent": "Ultimate-Certificate-Manager/2.206 Active24DNSProvider"}
             response = self.session.request(method, f"{self.base_url}{path}", headers=headers,
                                             json=payload, params=params, timeout=self.TIMEOUT)
         except requests.Timeout:

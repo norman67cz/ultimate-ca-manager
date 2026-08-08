@@ -1,6 +1,6 @@
 # ACTIVE24 implementation
 
-Base: upstream `v2.205` at `54a3d3782`.
+Base: upstream `v2.206` at `1c59fc96f`.
 
 Providers are registered in `dns_providers/__init__.py`; UCM renders credential forms from `get_credential_schema()` and persists encrypted provider credentials. ACME proxy records domain, record name, challenge value, and provider ID in `dns_records_created`. Cleanup may create a fresh provider instance.
 
