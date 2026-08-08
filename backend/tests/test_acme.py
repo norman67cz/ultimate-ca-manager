@@ -1071,6 +1071,14 @@ class TestAcmeLocalDomainsCRUD:
         # Either 400 (invalid format) or 404 (CA not found)
         assert r.status_code in (400, 404)
 
+    def test_create_single_label_local_domain_suffix(self, auth_client, create_ca):
+        ca = create_ca(cn='Single Label Local Domain CA')
+        r = post_json(auth_client, '/api/v2/acme/local-domains',
+                      {'domain': 'homeland', 'issuing_ca_id': ca['id']})
+        data = assert_success(r, status=201)
+        assert data['domain'] == 'homeland'
+        assert data['issuing_ca_id'] == ca['id']
+
     def test_create_local_domain_success(self, auth_client, create_ca):
         ca = create_ca(cn='Local Domain Test CA')
         r = post_json(auth_client, '/api/v2/acme/local-domains',
