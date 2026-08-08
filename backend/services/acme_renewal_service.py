@@ -256,10 +256,16 @@ def renew_certificate(order) -> tuple:
                 'dns_txt_name', f"_acme-challenge.{domain.lstrip('*.')}"
             )
             try:
-                dns_provider.delete_txt_record(
-                    domain=domain.lstrip('*.'),
+                success, message = dns_provider.delete_txt_record_exact(
+                    domain=domain.lstrip('*.') ,
                     record_name=record_name,
+                    record_value=challenge_info.get('dns_txt_value'),
                 )
+                if not success:
+                    logger.warning(
+                        'Failed to delete renewal DNS TXT for %s (%s): %s',
+                        domain, record_name, message,
+                    )
             except Exception as exc:
                 logger.warning(
                     'Failed to delete renewal DNS TXT for %s (%s): %s',
