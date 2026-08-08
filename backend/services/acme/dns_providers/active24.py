@@ -70,7 +70,7 @@ class Active24DnsProvider(BaseDnsProvider):
         if response.status_code == 429:
             return False, None, "ACTIVE24 API rate limit reached"
         if response.status_code >= 400:
-            logger.warning("ACTIVE24 API returned HTTP %s", response.status_code)
+            logger.warning("ACTIVE24 API %s %s returned HTTP %s", method.upper(), urlsplit(path).path, response.status_code)
             return False, None, f"ACTIVE24 API error (HTTP {response.status_code})"
         if not response.content:
             return True, None, ""
@@ -172,9 +172,10 @@ class Active24DnsProvider(BaseDnsProvider):
         matches = [r for r in records if r.get("type") == "TXT" and r.get("name") == name
                    and (record_value is None or self._value(r) == record_value)]
         for record in matches:
-            record_id = record.get("id") or record.get("record_id")
+            record_id = record.get("id") or record.get("record_id") or record.get("recordId")
             if record_id is None:
-                continue
+                logger.warning("ACTIVE24 TXT record response lacks a record ID for cleanup")
+                return False, "Invalid response from ACTIVE24 API"
             ok, _, message = self._request("DELETE", f"/v2/service/{service_id}/dns/record/{record_id}")
             if not ok:
                 return False, message

@@ -967,7 +967,9 @@ class AcmeProxyService:
     def _delete_dns_record(provider, zone: str, record_name: str, record_value: str | None = None) -> None:
         """Best-effort TXT cleanup helper."""
         try:
-            provider.delete_txt_record_exact(zone, record_name, record_value)
+            success, message = provider.delete_txt_record_exact(zone, record_name, record_value)
+            if not success:
+                logger.warning("Failed to cleanup DNS record %s (%s): %s", record_name, zone, message)
         except Exception as e:
             logger.warning("Failed to cleanup DNS record %s (%s): %s", record_name, zone, e)
 
