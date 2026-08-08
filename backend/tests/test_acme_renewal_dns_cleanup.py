@@ -53,7 +53,7 @@ def test_renewal_submits_upstream_when_propagation_not_ready(app, renewal_order)
 
     mock_provider = MagicMock()
     mock_provider.create_txt_record.return_value = (True, 'ok')
-    mock_provider.delete_txt_record.side_effect = (
+    mock_provider.delete_txt_record_exact.side_effect = (
         lambda **kwargs: deleted.append(kwargs) or (True, 'ok')
     )
 
@@ -137,7 +137,7 @@ def test_renewal_deletes_txt_when_create_fails_on_second_domain(app, renewal_ord
 
     mock_provider = MagicMock()
     mock_provider.create_txt_record.side_effect = create_side_effect
-    mock_provider.delete_txt_record.side_effect = (
+    mock_provider.delete_txt_record_exact.side_effect = (
         lambda **kwargs: deleted.append(kwargs) or (True, 'ok')
     )
 
