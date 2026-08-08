@@ -294,6 +294,7 @@ class TestProxyServiceBinding:
                 provider = MagicMock()
                 provider.get_zone_for_domain.return_value = 'example.com'
                 provider.get_acme_challenge_name.return_value = '_acme-challenge.test.example.com'
+                provider.create_txt_record.return_value = (True, 'ok')
                 create_prov.return_value = provider
 
                 svc._bg_respond_challenge(
@@ -346,6 +347,7 @@ class TestProxyServiceBinding:
                 provider = MagicMock()
                 provider.get_zone_for_domain.return_value = 'example.com'
                 provider.get_acme_challenge_name.return_value = '_acme-challenge.test.example.com'
+                provider.create_txt_record.return_value = (True, 'ok')
                 create_prov.return_value = provider
                 post_mock.return_value.status_code = 200
 
