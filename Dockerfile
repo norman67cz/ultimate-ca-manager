@@ -32,6 +32,9 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
 # Stage 2: Frontend builder - Compile Vite assets for production
 FROM node:22-bookworm-slim AS frontend-builder
 
+WORKDIR /build
+COPY VERSION ./VERSION
+
 WORKDIR /build/frontend
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
