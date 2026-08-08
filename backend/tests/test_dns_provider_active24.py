@@ -47,7 +47,7 @@ def test_signing_uses_utc_and_path_without_query(provider):
 
 def test_longest_suffix_and_substring_protection(provider, monkeypatch):
     calls = []
-    def request(method, path, payload=None):
+    def request(method, path, payload=None, params=None):
         calls.append(path)
         if path == "/v1/user/self/service":
             return True, {"items": [{"serviceName": "domain", "name": "example.cz", "id": 7}, {"serviceName": "domain", "name": "sub.example.cz", "id": 9}]}, ""
@@ -64,11 +64,11 @@ def test_create_and_exact_cleanup(provider, monkeypatch):
         {"id": 3, "type": "TXT", "name": "_acme-challenge", "content": "permanent"},
     ]
     deleted = []
-    def request(method, path, payload=None):
+    def request(method, path, payload=None, params=None):
         if path == "/v1/user/self/service":
             return True, {"items": [{"serviceName": "domain", "name": "example.cz", "id": 7}]}, ""
         if path == "/v2/service/7/dns/record" and method == "GET":
-            return True, records, ""
+            return True, [record for record in records if record["content"] == params.get("filters[content]")], ""
         if method == "DELETE":
             deleted.append(path.rsplit("/", 1)[1])
             return True, None, ""
@@ -95,7 +95,7 @@ def test_timeout_and_invalid_json(provider, monkeypatch):
 
 
 def test_connection(provider, monkeypatch):
-    def request(method, path, payload=None):
+    def request(method, path, payload=None, params=None):
         if path == "/v2/check":
             return True, {"verified": True}, ""
         return True, {"items": [{"serviceName": "domain", "name": "example.cz", "id": 7}]}, ""
@@ -107,11 +107,11 @@ def test_create_preserves_existing_txt_value_and_uses_active24_payload(provider,
     records = [{"id": 1, "type": "TXT", "name": "_acme-challenge", "content": "value-A"}]
     requests_seen = []
 
-    def request(method, path, payload=None):
+    def request(method, path, payload=None, params=None):
         if path == "/v1/user/self/service":
             return True, {"items": [{"serviceName": "domain", "name": "example.cz", "id": 7}]}, ""
         if method == "GET" and path == "/v2/service/7/dns/record":
-            return True, records, ""
+            return True, [record for record in records if record["content"] == params.get("filters[content]")], ""
         if method == "POST":
             requests_seen.append((path, payload))
             return True, None, ""
