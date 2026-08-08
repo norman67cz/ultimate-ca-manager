@@ -178,13 +178,14 @@ def _is_valid_dns_identifier(value: Any) -> bool:
     """
     if not isinstance(value, str) or not value or len(value) > 253:
         return False
-    if value.startswith('*.'):
+    is_wildcard = value.startswith('*.')
+    if is_wildcard:
         # Wildcard order: the prefix is stripped later, during authorization
         # normalization, so it must be tolerated here.
         value = value[2:]
     if value.endswith('.'):
         value = value[:-1]          # tolerate a single trailing root dot
-    if not value:
+    if not value or ('.' not in value and not is_wildcard):
         return False
     return all(_DNS_LABEL_RE.match(label) for label in value.split('.'))
 
