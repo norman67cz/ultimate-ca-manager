@@ -184,7 +184,14 @@ def find_local_domain_ca(domain: str) -> int | None:
 
     Returns issuing_ca_id or None.
     """
-    local = domain_match.find(AcmeLocalDomain, domain)
+    value = (domain or '').strip().lower()
+    bare = domain_match.normalize(value)
+    if not bare:
+        return None
+    # A bare label configures a policy suffix; it is not a certificate name.
+    if '.' not in bare and not value.startswith('*.'):
+        return None
+    local = domain_match.find(AcmeLocalDomain, value)
     return local.issuing_ca_id if local else None
 
 
