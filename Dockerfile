@@ -29,7 +29,16 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
     pip install --no-cache-dir -r /tmp/requirements.txt && \
     pip install --no-cache-dir --no-deps pyjks==20.0.0
 
-# Stage 2: Runtime - Minimal production image
+# Stage 2: Frontend builder - Compile Vite assets for production
+FROM node:22-bookworm-slim AS frontend-builder
+
+WORKDIR /build/frontend
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+COPY frontend/ ./
+RUN npm run build
+
+# Stage 3: Runtime - Minimal production image
 FROM python:3.13-slim-bookworm
 
 ARG VCS_REF=unknown
@@ -71,6 +80,7 @@ WORKDIR /opt/ucm
 COPY --chown=ucm:ucm VERSION /opt/ucm/VERSION
 COPY --chown=ucm:ucm backend/ /opt/ucm/backend/
 COPY --chown=ucm:ucm frontend/ /opt/ucm/frontend/
+COPY --from=frontend-builder --chown=ucm:ucm /build/frontend/dist/ /opt/ucm/frontend/dist/
 COPY --chown=ucm:ucm wsgi.py /opt/ucm/wsgi.py
 COPY --chown=ucm:ucm .env.docker.example /opt/ucm/.env.example
 
