@@ -125,8 +125,13 @@ class Active24DnsProvider(BaseDnsProvider):
         result = self._resolve(domain)
         return result[0] if result else None
 
-    def _records(self, service_id):
-        ok, data, message = self._request("GET", f"/v2/service/{service_id}/dns/record")
+    def _records(self, service_id, record_name=None, record_value=None):
+        params = {"filters[type][0]": "TXT"}
+        if record_name is not None:
+            params["filters[name]"] = record_name
+        if record_value is not None:
+            params["filters[content]"] = record_value
+        ok, data, message = self._request("GET", f"/v2/service/{service_id}/dns/record", params=params)
         if not ok:
             return None, message
         if isinstance(data, list):
@@ -148,10 +153,10 @@ class Active24DnsProvider(BaseDnsProvider):
             return False, "No ACTIVE24 DNS zone is available for this domain"
         zone, service_id = resolved
         name = self._relative(record_name, zone)
-        records, message = self._records(service_id)
+        records, message = self._records(service_id, name, record_value)
         if records is None:
             return False, message
-        if any(r.get("type") == "TXT" and r.get("name") == name and self._value(r) == record_value for r in records):
+        if records:
             return True, "TXT record already exists"
         ok, _, message = self._request("POST", f"/v2/service/{service_id}/dns/record",
                                        {"type": "TXT", "name": name, "content": record_value, "ttl": max(300, int(ttl))})
@@ -166,11 +171,12 @@ class Active24DnsProvider(BaseDnsProvider):
             return True, "TXT record is already absent"
         zone, service_id = resolved
         name = self._relative(record_name, zone)
-        records, message = self._records(service_id)
+        records, message = self._records(service_id, name, record_value)
         if records is None:
             return False, message
-        matches = [r for r in records if r.get("type") == "TXT" and r.get("name") == name
-                   and (record_value is None or self._value(r) == record_value)]
+        matches = records if record_value is not None else [
+            r for r in records if r.get("type") == "TXT" and r.get("name") == name
+        ]
         for record in matches:
             record_id = record.get("id") or record.get("record_id") or record.get("recordId")
             if record_id is None:
