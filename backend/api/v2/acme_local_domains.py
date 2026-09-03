@@ -2,6 +2,7 @@
 ACME Local Domains API Routes
 Manages domain-to-CA mappings for the Local ACME server.
 """
+import re
 import logging
 from flask import Blueprint, request, g
 from auth.unified import require_auth
