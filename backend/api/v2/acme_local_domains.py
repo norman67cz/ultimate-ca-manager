@@ -2,6 +2,7 @@
 ACME Local Domains API Routes
 Manages domain-to-CA mappings for the Local ACME server.
 """
+import re
 import logging
 from flask import Blueprint, request, g
 from auth.unified import require_auth
@@ -9,7 +10,6 @@ from utils.response import success_response, error_response
 from utils.db_transaction import safe_commit
 from models import db, AcmeLocalDomain, CA
 from services.audit_service import AuditService
-from utils.acme_allowed_domains import normalize_allowed_domain_suffix
 
 logger = logging.getLogger(__name__)
 
@@ -189,7 +189,5 @@ def find_local_domain_ca(domain: str) -> int | None:
 
 def _is_valid_domain(domain: str) -> bool:
     """Validate a Local Domains policy suffix or legacy wildcard policy."""
-    is_wildcard = domain.startswith("*.")
-    suffix = domain[2:] if is_wildcard else domain
-    normalized = normalize_allowed_domain_suffix(suffix)
-    return normalized is not None and (not is_wildcard or "." in normalized)
+    pattern = r'^(\*\.)?(([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+)?[a-zA-Z]{2,}\Z'
+    return bool(re.match(pattern, domain))

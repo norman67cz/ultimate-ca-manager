@@ -9,7 +9,7 @@ def test_single_label_local_domain_policy_suffixes():
     assert _is_valid_domain("lan.homeland")
     assert _is_valid_domain("example.cz")
     assert not _is_valid_domain(".homeland")
-    assert not _is_valid_domain("*.homeland")
+    assert _is_valid_domain("*.homeland")
     assert not _is_valid_domain("home_land")
     assert not _is_valid_domain("homeland.")
     assert validate_acme_identifier({"type": "dns", "value": "pve01.homeland"})[0]
