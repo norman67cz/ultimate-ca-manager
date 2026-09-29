@@ -41,8 +41,11 @@ def test_signing_uses_utc_and_path_without_query(provider):
     headers = provider._headers("POST", "/v2/service/7/dns/record?x=1", timestamp)
     canonical = "POST /v2/service/7/dns/record 1784720000"
     signature = hmac.new(b"super-secret", canonical.encode(), hashlib.sha1).hexdigest()
-    assert base64.b64decode(headers["Authorization"].split()[1]).decode() == f"identifier:{signature}"
-    assert headers["Date"].endswith("+00:00")
+    assert hmac.compare_digest(
+        base64.b64decode(headers["Authorization"].split()[1]).decode(),
+        f"identifier:{signature}",
+    )
+    assert headers["Date"] == "20260722T113320Z"
 
 
 def test_longest_suffix_and_substring_protection(provider, monkeypatch):
