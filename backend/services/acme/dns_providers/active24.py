@@ -51,13 +51,13 @@ class Active24DnsProvider(BaseDnsProvider):
         canonical = self._canonical_string(method, path, timestamp)
         sig = hmac.new(self.credentials["api_secret"].encode(), canonical.encode(), hashlib.sha1).hexdigest()
         auth = base64.b64encode(f"{self.credentials['api_key']}:{sig}".encode()).decode()
-        return {"Date": datetime.fromtimestamp(timestamp, timezone.utc).isoformat(),
+        return {"Date": datetime.fromtimestamp(timestamp, timezone.utc).strftime("%Y%m%dT%H%M%SZ"),
                 "Accept": "application/json", "Content-Type": "application/json", "Authorization": f"Basic {auth}"}
 
     def _request(self, method, path, payload=None, params=None):
         try:
             headers = {**self._headers(method, path),
-                       "User-Agent": "Ultimate-Certificate-Manager/2.205 Active24DNSProvider"}
+                       "User-Agent": "Ultimate-Certificate-Manager Active24DNSProvider"}
             response = self.session.request(method, f"{self.base_url}{path}", headers=headers,
                                             json=payload, params=params, timeout=self.TIMEOUT)
         except requests.Timeout:
@@ -144,6 +144,16 @@ class Active24DnsProvider(BaseDnsProvider):
     def _value(record):
         return record.get("content", record.get("value"))
 
+    @classmethod
+    def _matching_txt_records(cls, records, name, value=None):
+        return [
+            record for record in records
+            if isinstance(record, dict)
+            and record.get("type") == "TXT"
+            and record.get("name") == name
+            and (value is None or cls._value(record) == value)
+        ]
+
     def _relative(self, record_name, zone):
         return self.get_relative_record_name(self._domain(record_name), zone).rstrip(".")
 
@@ -156,14 +166,14 @@ class Active24DnsProvider(BaseDnsProvider):
         records, message = self._records(service_id, name, record_value)
         if records is None:
             return False, message
-        if records:
+        if self._matching_txt_records(records, name, record_value):
             return True, "TXT record already exists"
         ok, _, message = self._request("POST", f"/v2/service/{service_id}/dns/record",
                                        {"type": "TXT", "name": name, "content": record_value, "ttl": max(300, int(ttl))})
         return (True, "TXT record created") if ok else (False, message)
 
     def delete_txt_record(self, domain, record_name):
-        return self.delete_txt_record_exact(domain, record_name)
+        return False, "ACTIVE24 cleanup requires the DNS TXT challenge value"
 
     def delete_txt_record_exact(self, domain, record_name, record_value=None):
         resolved = self._resolve(domain)
@@ -174,9 +184,7 @@ class Active24DnsProvider(BaseDnsProvider):
         records, message = self._records(service_id, name, record_value)
         if records is None:
             return False, message
-        matches = records if record_value is not None else [
-            r for r in records if r.get("type") == "TXT" and r.get("name") == name
-        ]
+        matches = self._matching_txt_records(records, name, record_value)
         for record in matches:
             record_id = record.get("id") or record.get("record_id") or record.get("recordId")
             if record_id is None:
