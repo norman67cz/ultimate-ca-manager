@@ -60,6 +60,7 @@ docs/
 
 # Node dependencies: the image serves frontend/dist, never the sources
 **/node_modules/
+frontend/dist/
 
 # Data directories (mounted as volumes)
 backend/data/

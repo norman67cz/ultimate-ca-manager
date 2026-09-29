@@ -29,12 +29,30 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
     pip install --no-cache-dir -r /tmp/requirements.txt && \
     pip install --no-cache-dir --no-deps pyjks==20.0.0
 
+# Stage 2: build immutable production Vite assets inside the image build.
+FROM node:22-bookworm-slim AS frontend-builder
+
+WORKDIR /build
+COPY VERSION ./VERSION
+WORKDIR /build/frontend
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+COPY frontend/ ./
+RUN npm run build
+
 # Stage 2: Runtime - Minimal production image
 FROM python:3.13-slim-bookworm
 
+ARG VCS_REF=unknown
+ARG VERSION=unknown
+ARG BUILD_DATE=unknown
+
 LABEL maintainer="NeySlim <https://github.com/NeySlim>" \
       description="Ultimate CA Manager - Certificate Authority Management System" \
-      org.opencontainers.image.source="https://github.com/NeySlim/ultimate-ca-manager"
+      org.opencontainers.image.source="https://github.com/norman67cz/ultimate-ca-manager" \
+      org.opencontainers.image.revision="${VCS_REF}" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.created="${BUILD_DATE}"
 
 # Install only runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -64,10 +82,7 @@ WORKDIR /opt/ucm
 # Copy application files with proper ownership (same layout as packages)
 COPY --chown=ucm:ucm VERSION /opt/ucm/VERSION
 COPY --chown=ucm:ucm backend/ /opt/ucm/backend/
-# Only the built interface: the server serves frontend/dist, while frontend/
-# as a whole carries the sources and node_modules, several hundred megabytes
-# of build-time dependencies that have no place in a runtime image
-COPY --chown=ucm:ucm frontend/dist/ /opt/ucm/frontend/dist/
+COPY --from=frontend-builder --chown=ucm:ucm /build/frontend/dist/ /opt/ucm/frontend/dist/
 COPY --chown=ucm:ucm wsgi.py /opt/ucm/wsgi.py
 COPY --chown=ucm:ucm .env.docker.example /opt/ucm/.env.example
 
@@ -80,7 +95,8 @@ RUN for d in ca certs private crl scep backups sessions logs temp; do \
     done && \
     mkdir -p /var/log/ucm && \
     mkdir -p /etc/ucm && \
-    chown -R ucm:ucm /opt/ucm /var/log/ucm /etc/ucm
+    chown ucm:ucm /opt/ucm && \
+    chown -R ucm:ucm /opt/ucm/data /var/log/ucm /etc/ucm
 
 # Set environment variables
 ENV PATH="/opt/ucm/venv/bin:$PATH" \
