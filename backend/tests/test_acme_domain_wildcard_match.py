@@ -32,7 +32,7 @@ def clean_domains(app):
 
 
 class TestTheWildcardSpellingIsFoundAgain:
-    @pytest.mark.parametrize('asked', ['host.custom', '*.custom', 'custom'])
+    @pytest.mark.parametrize('asked', ['host.custom', '*.custom'])
     def test_an_entry_stored_as_a_wildcard_resolves(
             self, app, clean_domains, asked):
         with app.app_context():
@@ -41,13 +41,21 @@ class TestTheWildcardSpellingIsFoundAgain:
 
             assert find_local_domain_ca(asked) == 7
 
-    @pytest.mark.parametrize('asked', ['host.custom', '*.custom', 'custom'])
+    @pytest.mark.parametrize('asked', ['host.custom', '*.custom'])
     def test_the_bare_spelling_still_resolves(self, app, clean_domains, asked):
         with app.app_context():
             db.session.add(AcmeLocalDomain(domain='custom', issuing_ca_id=7))
             db.session.commit()
 
             assert find_local_domain_ca(asked) == 7
+
+    def test_bare_single_label_is_not_a_certificate_identifier(
+            self, app, clean_domains):
+        with app.app_context():
+            db.session.add(AcmeLocalDomain(domain='custom', issuing_ca_id=7))
+            db.session.commit()
+
+            assert find_local_domain_ca('custom') is None
 
     def test_the_dns_table_answers_the_same_way(self, app, clean_domains):
         with app.app_context():
