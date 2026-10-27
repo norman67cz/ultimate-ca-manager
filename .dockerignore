@@ -4,6 +4,9 @@
 .git
 .gitignore
 .gitattributes
+.agents/
+.codex/
+.aws/
 
 # Python. A pattern without a slash is anchored at the context root, unlike
 # git: **/ is what reaches backend/venv and the like.
