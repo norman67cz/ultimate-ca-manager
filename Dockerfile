@@ -103,14 +103,32 @@ RUN set -eu; cd "openssl-${FIPS_PROVIDER_VERSION}"; \
 FROM scratch AS fips-provider-0
 FROM fips-provider-${UCM_FIPS_BUILD} AS fips-provider
 
+# Build the frontend from this exact source revision.  A local frontend/dist
+# may be stale and must never become part of the release image.
+FROM node:22-bookworm-slim AS frontend-builder
+WORKDIR /build
+COPY VERSION /build/VERSION
+COPY frontend/package.json frontend/package-lock.json /build/frontend/
+WORKDIR /build/frontend
+RUN npm ci
+COPY frontend/ /build/frontend/
+RUN npm run build
+
 # Stage 2: Runtime - Minimal production image
 FROM python:3.13-slim-trixie
 ARG UCM_FIPS_BUILD
 ARG TARGETARCH
+ARG VCS_REF=unknown
+ARG VERSION=unknown
+ARG BUILD_DATE=unknown
+ARG OCI_SOURCE=https://github.com/NeySlim/ultimate-ca-manager
 
 LABEL maintainer="NeySlim <https://github.com/NeySlim>" \
       description="Ultimate CA Manager - Certificate Authority Management System" \
-      org.opencontainers.image.source="https://github.com/NeySlim/ultimate-ca-manager" \
+      org.opencontainers.image.source="${OCI_SOURCE}" \
+      org.opencontainers.image.revision="${VCS_REF}" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.created="${BUILD_DATE}" \
       org.opencontainers.image.licenses="AGPL-3.0-only"
 
 # Install only runtime dependencies
@@ -161,7 +179,7 @@ COPY --chown=ucm:ucm backend/ /opt/ucm/backend/
 # Only the built interface: the server serves frontend/dist, while frontend/
 # as a whole carries the sources and node_modules, several hundred megabytes
 # of build-time dependencies that have no place in a runtime image
-COPY --chown=ucm:ucm frontend/dist/ /opt/ucm/frontend/dist/
+COPY --from=frontend-builder --chown=ucm:ucm /build/frontend/dist/ /opt/ucm/frontend/dist/
 COPY --chown=ucm:ucm wsgi.py /opt/ucm/wsgi.py
 COPY --chown=ucm:ucm .env.docker.example /opt/ucm/.env.example
 

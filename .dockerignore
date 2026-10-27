@@ -21,9 +21,9 @@
 **/.mypy_cache/
 **/build/
 develop-eggs/
-# Root-anchored on purpose: **/dist/ would exclude frontend/dist, the built
-# interface the image serves, and the image would come out without a UI
+# Vite assets are built from source inside Docker, never copied from a local build.
 dist/
+frontend/dist/
 downloads/
 eggs/
 .eggs/
