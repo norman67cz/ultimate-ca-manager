@@ -1,5 +1,9 @@
 # Ultimate Certificate Manager
 
+The fork's `release/active24-v2.245` branch adds native ACTIVE24 DNS-01
+support and single-label suffix policy for Local ACME. See the
+[ACTIVE24 DNS provider guide](docs/ACTIVE24_DNS_PROVIDER.md) for setup.
+
 ![Version](https://img.shields.io/github/v/release/NeySlim/ultimate-ca-manager?label=version&color=brightgreen)
 ![License](https://img.shields.io/badge/license-AGPL--3.0--only-blue.svg)
 ![Docker Hub](https://img.shields.io/docker/v/neyslim/ultimate-ca-manager?label=docker%20hub&color=blue)
