@@ -654,6 +654,8 @@ class TestDns01Thread:
                             lambda *_a, **_k: {'provider': provider_model})
         provider = MagicMock()
         provider.get_acme_challenge_name.side_effect = lambda d: f'_acme-challenge.{d}'
+        provider.create_txt_record.return_value = (True, 'TXT record created')
+        provider.delete_txt_record_exact.return_value = (True, 'TXT record deleted')
         monkeypatch.setattr('services.acme.dns_providers.create_provider',
                             lambda *_a, **_k: provider)
         monkeypatch.setattr(proxy_mod, 'wait_for_txt',
