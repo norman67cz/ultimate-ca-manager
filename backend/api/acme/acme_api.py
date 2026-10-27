@@ -193,6 +193,17 @@ from services.acme.identifiers import (  # noqa: E402
 )
 
 
+def validate_local_acme_identifier(identifier: Dict[str, Any]) -> Tuple[bool, Optional[str], Optional[str]]:
+    """Require an FQDN for Local ACME without changing proxy syntax rules."""
+    ok, error_type, detail = validate_acme_identifier(identifier)
+    if not ok or identifier.get('type') != 'dns':
+        return ok, error_type, detail
+    value = identifier.get('value', '')
+    if not value.startswith('*.') and '.' not in value.rstrip('.'):
+        return False, 'malformed', 'Local ACME DNS identifiers must be fully qualified'
+    return True, None, None
+
+
 def _identifier_subproblem(
     identifier: Any,
     error_type: str,
@@ -865,7 +876,7 @@ def new_authz():
         
         # Validate identifier (RFC 8555 DNS + RFC 8738 IP)
         identifier = payload.get('identifier')
-        ok, err_type, err_detail = validate_acme_identifier(identifier)
+        ok, err_type, err_detail = validate_local_acme_identifier(identifier)
         if not ok:
             return acme_error(err_type, err_detail)
 
@@ -966,7 +977,7 @@ def new_order():
         # independent failure instead of stopping at the first one.
         identifier_errors = []
         for identifier in identifiers:
-            ok, err_type, err_detail = validate_acme_identifier(identifier)
+            ok, err_type, err_detail = validate_local_acme_identifier(identifier)
             if not ok:
                 identifier_errors.append(_identifier_subproblem(
                     identifier, err_type, err_detail

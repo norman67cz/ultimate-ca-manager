@@ -236,6 +236,10 @@ Enable Let's Encrypt-compatible certificate issuance:
    - **Allowed Domains** - Restrict issuance
 4. Clients use: `https://your-server:8443/acme/directory`
 
+For an internal namespace, a single-label Allowed Domains entry such as
+`homeland` permits `pve01.homeland` and `host.lab.homeland`. It does not
+permit `evilhomeland` or make the bare `homeland` a certificate identifier.
+
 ### SCEP Server
 
 Enable device auto-enrollment:

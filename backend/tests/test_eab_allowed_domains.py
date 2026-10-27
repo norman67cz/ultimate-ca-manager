@@ -59,6 +59,14 @@ def _ip(value):
     (['*.b.example.com'], _dns('*.example.com'), False),
     (['host.example.com'], _dns('*.example.com'), False),
     (['example.com'], _dns('*.example.com'), False),
+    (['homeland'], _dns('pve01.homeland'), True),
+    (['homeland'], _dns('foo.bar.homeland'), True),
+    (['homeland'], _dns('*.homeland'), True),
+    (['homeland'], _dns('homeland'), False),
+    (['homeland'], _dns('evilhomeland'), False),
+    (['homeland'], _dns('foo.evilhomeland'), False),
+    (['homeland'], _dns('homeland.example.com'), False),
+    (['homeland'], _dns('example.cz'), False),
     (['*'], _ip('10.0.0.1'), True),
     (['10.0.0.1'], _ip('10.0.0.1'), True),
     (['10.0.0.1'], _ip('10.0.0.2'), False),
@@ -310,6 +318,12 @@ class TestServerNewOrder:
     def test_allowed_names_are_ordered(self, client, make_cred, acme_account):
         make_cred(['*.example.com'], acme_account['account_id'])
         assert _order(client, acme_account, ['a.example.com', 'b.c.example.com']).status_code == 201
+
+    def test_private_suffix_allows_only_its_fqdns(self, client, make_cred, acme_account):
+        make_cred(['homeland'], acme_account['account_id'])
+        assert _order(client, acme_account, ['pve01.homeland']).status_code == 201
+        assert _order(client, acme_account, ['foo.bar.homeland']).status_code == 201
+        assert _order(client, acme_account, ['evilhomeland']).status_code == 400
 
     def test_unbound_account_is_unrestricted(self, client, make_cred, acme_account):
         make_cred([])  # an unrelated, unbound credential

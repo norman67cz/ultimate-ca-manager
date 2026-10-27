@@ -1763,7 +1763,7 @@
       "delete": "Delete",
       "deletedSuccess": "EAB credential deleted",
       "allowedDomains": "Allowed domains",
-      "allowedDomainsHelp": "One pattern per line or comma separated: example.com, *.example.com (subdomains only, not the apex) or an IP address. An empty list blocks every request.",
+      "allowedDomainsHelp": "One pattern per line or comma separated: example.com, *.example.com (subdomains only, not the apex), a private suffix such as homeland, or an IP address. An empty list blocks every request.",
       "allDomainsLabel": "Allow all domains",
       "allDomains": "All domains",
       "noDomains": "None (all requests blocked)",

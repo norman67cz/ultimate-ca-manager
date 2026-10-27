@@ -753,6 +753,14 @@ class AcmeEabCredential(db.Model):
             if pattern.startswith('*.'):
                 if _wildcard_covers(pattern[2:], value):
                     return True
+            elif '.' not in pattern:
+                # A private single-label namespace is a policy suffix. It
+                # covers names below it, never the bare label itself.
+                bare_value = value[2:] if value.startswith('*.') else value
+                if bare_value.endswith('.' + pattern) or (
+                    value.startswith('*.') and bare_value == pattern
+                ):
+                    return True
             elif pattern == value:
                 return True
         return False
